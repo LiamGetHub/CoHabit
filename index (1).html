@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>NestMate – Apartment 4B</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --home-accent: #3B4FE8;
+    --chat-accent: #3B4FE8;
+    --money-accent: #1E8A4A;
+    --tasks-accent: #6C22C8;
+    --bg: #F4F5FA;
+    --card: #FFFFFF;
+    --text: #1A1A2E;
+    --muted: #7B7D9D;
+    --border: #E8E9F3;
+    --radius: 18px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.08);
+    --accent: #3B4FE8;
+  }
+
+  html, body {
+    height: 100%;
+    font-family: 'DM Sans', sans-serif;
+    background: #1A1A2E;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .phone-shell {
+    width: 390px;
+    height: 844px;
+    background: var(--bg);
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.1);
+  }
+
+  @media (max-width: 420px) {
+    html, body { background: var(--bg); }
+    .phone-shell {
+      width: 100vw; height: 100vh;
+      border-radius: 0;
+      box-shadow: none;
+    }
+  }
+
+  /* ── SCREENS ── */
+  .screens { flex: 1; overflow: hidden; position: relative; }
+  .screen {
+    position: absolute; inset: 0;
+    overflow-y: auto; overflow-x: hidden;
+    opacity: 0; pointer-events: none;
+    transform: translateY(12px);
+    transition: opacity .25s ease, transform .25s ease;
+    -webkit-overflow-scrolling: touch;
+  }
+  .screen.active {
+    opacity: 1; pointer-events: all; transform: translateY(0);
+  }
+  .screen::-webkit-scrollbar { display: none; }
+
+  /* ── BOTTOM NAV ── */
+  .nav {
+    height: 72px;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding-bottom: env(safe-area-inset-bottom, 8px);
+    flex-shrink: 0;
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    cursor: pointer; flex: 1; padding: 8px 0;
+    color: var(--muted); transition: color .2s;
+    font-size: 11px; font-weight: 500; letter-spacing: .3px;
+    background: none; border: none;
+  }
+  .nav-item svg { width: 22px; height: 22px; stroke-width: 1.8; }
+  .nav-item.active[data-tab="home"] { color: var(--home-accent); }
+  .nav-item.active[data-tab="chat"] { color: var(--chat-accent); }
+  .nav-item.active[data-tab="money"] { color: var(--money-accent); }
+  .nav-item.active[data-tab="tasks"] { color: var(--tasks-accent); }
+
+  /* ── HEADER CARDS ── */
+  .hero-header {
+    padding: 52px 20px 24px;
+    color: white;
+  }
+  .hero-header h1 { font-size: 26px; font-weight: 700; }
+  .hero-header p { opacity: .8; font-size: 14px; margin-top: 2px; }
+
+  /* ── HOME ── */
+  #home .hero-header { background: var(--home-accent); }
+  .stat-row {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 10px; padding: 0 16px; margin-top: -20px;
+  }
+  .stat-card {
+    background: var(--card); border-radius: 14px;
+    padding: 14px 10px; text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .stat-card .stat-icon { font-size: 20px; margin-bottom: 4px; }
+  .stat-card .stat-val { font-size: 22px; font-weight: 700; color: var(--text); }
+  .stat-card .stat-lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .section { padding: 20px 16px 0; }
+  .section-title {
+    font-size: 17px; font-weight: 700; color: var(--text);
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+  }
+  .section-title a { font-size: 13px; font-weight: 500; color: var(--accent); text-decoration: none; }
+
+  /* Roommate list */
+  .roommate-list { background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .roommate-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+  }
+  .roommate-item:last-child { border-bottom: none; }
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; color: white; flex-shrink: 0;
+  }
+  .av-blue { background: #3B4FE8; }
+  .av-teal { background: #14B8A6; }
+  .av-orange { background: #F97316; }
+  .av-purple { background: #A855F7; }
+  .av-green { background: #22C55E; }
+  .av-you { background: #3B4FE8; }
+  .roommate-info { flex: 1; }
+  .roommate-info strong { font-size: 14px; font-weight: 600; display: block; }
+  .roommate-info span { font-size: 12px; color: var(--muted); }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    border: 2px solid var(--card);
+    margin-top: 14px; margin-left: -18px;
+  }
+  .dot-online { background: #22C55E; }
+  .dot-offline { background: #D1D5DB; }
+
+  /* Task items */
+  .task-preview { background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .task-preview-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+  }
+  .task-preview-item:last-child { border-bottom: none; }
+  .task-check-icon { width: 22px; height: 22px; color: var(--muted); flex-shrink: 0; }
+  .task-info { flex: 1; }
+  .task-info strong { font-size: 14px; font-weight: 600; }
+  .task-info span { font-size: 12px; color: var(--muted); display: block; }
+  .task-due { font-size: 12px; color: var(--muted); }
+
+  /* Activity */
+  .activity-list { background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); margin-bottom: 24px; }
+  .activity-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+  }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-icon {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 14px;
+  }
+  .ai-money { background: #DCFCE7; color: #16A34A; }
+  .ai-task  { background: #EDE9FE; color: #7C3AED; }
+  .ai-chat  { background: #DBEAFE; color: #2563EB; }
+  .activity-body { flex: 1; }
+  .activity-body p { font-size: 13px; color: var(--text); line-height: 1.4; }
+  .activity-body p strong { font-weight: 600; }
+  .activity-body small { font-size: 11px; color: var(--muted); }
+
+  /* ── CHAT ── */
+  #chat { display: flex; flex-direction: column; }
+  #chat .hero-header { background: var(--chat-accent); padding-bottom: 16px; flex-shrink: 0; }
+  .chat-messages { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 8px; }
+  .msg-row { display: flex; gap: 8px; align-items: flex-end; }
+  .msg-row.me { flex-direction: row-reverse; }
+  .msg-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: white; flex-shrink: 0; }
+  .bubble-wrap { display: flex; flex-direction: column; max-width: 70%; }
+  .msg-row.me .bubble-wrap { align-items: flex-end; }
+  .msg-sender { font-size: 11px; color: var(--muted); margin-bottom: 3px; font-weight: 500; }
+  .bubble {
+    padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.45;
+    background: var(--card); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  }
+  .msg-row.me .bubble { background: var(--chat-accent); color: white; }
+  .msg-time { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+  .chat-input-bar {
+    padding: 12px 16px; background: var(--card); border-top: 1px solid var(--border);
+    display: flex; gap: 10px; align-items: center; flex-shrink: 0;
+  }
+  .chat-input {
+    flex: 1; border: 1.5px solid var(--border); border-radius: 24px;
+    padding: 10px 16px; font-size: 14px; font-family: inherit;
+    background: var(--bg); outline: none; color: var(--text);
+    transition: border-color .2s;
+  }
+  .chat-input:focus { border-color: var(--chat-accent); }
+  .send-btn {
+    width: 42px; height: 42px; border-radius: 50%; background: var(--chat-accent);
+    border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: white; transition: transform .15s, opacity .15s; flex-shrink: 0;
+  }
+  .send-btn:active { transform: scale(.9); }
+
+  /* ── MONEY ── */
+  #money .hero-header { background: var(--money-accent); padding-bottom: 32px; }
+  .money-balance { font-size: 38px; font-weight: 800; margin-top: 6px; }
+  .money-sub { opacity: .8; font-size: 13px; }
+  .money-add-btn {
+    position: absolute; right: 20px; top: 52px;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,.25); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; color: white;
+  }
+  .balance-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .balance-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+  }
+  .balance-row:last-child { border-bottom: none; }
+  .bal-info { flex: 1; font-size: 14px; font-weight: 600; }
+  .bal-amount { font-size: 14px; font-weight: 700; font-family: 'DM Mono', monospace; }
+  .bal-up { color: #16A34A; }
+  .bal-down { color: #DC2626; }
+  .bal-zero { color: var(--muted); }
+
+  .txn-list { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 24px; }
+  .txn-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+  }
+  .txn-item:last-child { border-bottom: none; }
+  .txn-icon { width: 36px; height: 36px; border-radius: 50%; background: #DCFCE7; color: #16A34A; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .txn-body { flex: 1; }
+  .txn-body strong { font-size: 14px; font-weight: 600; display: block; }
+  .txn-body span { font-size: 12px; color: var(--muted); }
+  .txn-amount { font-size: 14px; font-weight: 700; font-family: 'DM Mono', monospace; }
+  .txn-date { font-size: 11px; color: var(--muted); display: block; text-align: right; }
+
+  /* Add expense modal */
+  .modal-overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,.45);
+    display: flex; align-items: flex-end; z-index: 100;
+    opacity: 0; pointer-events: none; transition: opacity .25s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal-sheet {
+    background: var(--card); border-radius: 24px 24px 0 0;
+    padding: 24px; width: 100%;
+    transform: translateY(100%); transition: transform .3s ease;
+  }
+  .modal-overlay.open .modal-sheet { transform: translateY(0); }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+  .modal-field { margin-bottom: 14px; }
+  .modal-field label { font-size: 12px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .5px; }
+  .modal-field input, .modal-field select {
+    width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
+    border-radius: 12px; font-family: inherit; font-size: 14px; outline: none;
+    background: var(--bg); color: var(--text); transition: border-color .2s;
+  }
+  .modal-field input:focus, .modal-field select:focus { border-color: var(--money-accent); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 6px; }
+  .btn-cancel {
+    flex: 1; padding: 13px; border-radius: 12px; border: 1.5px solid var(--border);
+    background: none; font-family: inherit; font-size: 14px; font-weight: 600;
+    cursor: pointer; color: var(--muted);
+  }
+  .btn-primary {
+    flex: 2; padding: 13px; border-radius: 12px; border: none;
+    background: var(--money-accent); color: white;
+    font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+
+  /* ── TASKS ── */
+  #tasks .hero-header { background: var(--tasks-accent); padding-bottom: 16px; position: relative; }
+  .tasks-stats { display: flex; gap: 10px; margin-top: 16px; }
+  .tasks-stat {
+    background: rgba(255,255,255,.18); border-radius: 12px;
+    padding: 10px 16px; text-align: center; flex: 1;
+  }
+  .tasks-stat .ts-val { font-size: 24px; font-weight: 800; }
+  .tasks-stat .ts-lbl { font-size: 11px; opacity: .8; }
+  .tasks-add-btn {
+    position: absolute; right: 20px; top: 52px;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,.25); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; color: white;
+  }
+
+  .task-list { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .task-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px; border-bottom: 1px solid var(--border); cursor: pointer;
+    transition: background .15s;
+  }
+  .task-item:last-child { border-bottom: none; }
+  .task-item:active { background: var(--bg); }
+  .task-checkbox {
+    width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    transition: all .2s; cursor: pointer;
+  }
+  .task-checkbox.done { background: #22C55E; border-color: #22C55E; }
+  .task-item-body { flex: 1; }
+  .task-item-body strong { font-size: 14px; font-weight: 600; display: block; }
+  .task-item-body strong.strikethrough { text-decoration: line-through; color: var(--muted); }
+  .task-item-body span { font-size: 12px; color: var(--muted); }
+  .task-badge {
+    font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px;
+    background: #EDE9FE; color: #7C3AED;
+  }
+  .task-badge.shopping { background: #DCFCE7; color: #16A34A; }
+  .task-due-date { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 3px; }
+
+  /* Add task modal */
+  .tasks-btn-primary {
+    flex: 2; padding: 13px; border-radius: 12px; border: none;
+    background: var(--tasks-accent); color: white;
+    font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+
+  /* Completed section */
+  .completed-section { margin-bottom: 24px; }
+
+  /* Toast */
+  .toast {
+    position: absolute; bottom: 86px; left: 50%; transform: translateX(-50%) translateY(16px);
+    background: #1A1A2E; color: white; padding: 10px 20px; border-radius: 24px;
+    font-size: 13px; font-weight: 500; white-space: nowrap;
+    opacity: 0; transition: all .25s; pointer-events: none; z-index: 200;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="phone-shell" id="app">
+
+  <!-- ═══════════ HOME ═══════════ -->
+  <div class="screen active" id="home">
+    <div class="hero-header" style="position:relative">
+      <h1>Welcome Home! 🏠</h1>
+      <p>Apartment 4B</p>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-val">4</div>
+        <div class="stat-lbl">Roommates</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-val" id="home-balance">$450</div>
+        <div class="stat-lbl">Balance</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-val" id="home-tasks">4</div>
+        <div class="stat-lbl">Tasks</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Roommates</div>
+      <div class="roommate-list">
+        <div class="roommate-item">
+          <div style="position:relative">
+            <div class="avatar av-blue">AC</div>
+            <div class="status-dot dot-online"></div>
+          </div>
+          <div class="roommate-info"><strong>Alex Chen</strong><span>Online</span></div>
+        </div>
+        <div class="roommate-item">
+          <div style="position:relative">
+            <div class="avatar av-teal">JS</div>
+            <div class="status-dot dot-online"></div>
+          </div>
+          <div class="roommate-info"><strong>Jordan Smith</strong><span>Online</span></div>
+        </div>
+        <div class="roommate-item">
+          <div style="position:relative">
+            <div class="avatar av-orange">ST</div>
+            <div class="status-dot dot-offline"></div>
+          </div>
+          <div class="roommate-info"><strong>Sam Taylor</strong><span>Offline</span></div>
+        </div>
+        <div class="roommate-item">
+          <div style="position:relative">
+            <div class="avatar av-purple">ML</div>
+            <div class="status-dot dot-online"></div>
+          </div>
+          <div class="roommate-info"><strong>Morgan Lee</strong><span>Online</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">
+        Upcoming Tasks
+        <a href="#" onclick="switchTab('tasks');return false">View all</a>
+      </div>
+      <div class="task-preview" id="home-task-preview">
+        <div class="task-preview-item">
+          <svg class="task-check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4"/></svg>
+          <div class="task-info"><strong>Take out trash</strong><span>Your turn</span></div>
+          <span class="task-due">Today</span>
+        </div>
+        <div class="task-preview-item">
+          <svg class="task-check-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4"/></svg>
+          <div class="task-info"><strong>Clean bathroom</strong><span>Morgan</span></div>
+          <span class="task-due">Tomorrow</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Recent Activity</div>
+      <div class="activity-list" id="activity-feed">
+        <div class="activity-item">
+          <div class="activity-icon ai-money">💵</div>
+          <div class="activity-body"><p><strong>Alex</strong> paid $150 for utilities</p><small>2h ago</small></div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-icon ai-task">✓</div>
+          <div class="activity-body"><p><strong>Jordan</strong> completed Kitchen Cleanup</p><small>5h ago</small></div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-icon ai-chat">💬</div>
+          <div class="activity-body"><p><strong>Sam</strong> sent a message</p><small>1d ago</small></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ CHAT ═══════════ -->
+  <div class="screen" id="chat" style="display:flex;flex-direction:column;height:100%">
+    <div class="hero-header">
+      <h1>Group Chat 💬</h1>
+      <p>4 members online</p>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="msg-row">
+        <div class="avatar av-blue msg-avatar">AC</div>
+        <div class="bubble-wrap">
+          <span class="msg-sender">Alex Chen</span>
+          <div class="bubble">Hey everyone! Don't forget we have the landlord inspection tomorrow</div>
+          <span class="msg-time">10:30 AM</span>
+        </div>
+      </div>
+      <div class="msg-row">
+        <div class="avatar av-teal msg-avatar">JS</div>
+        <div class="bubble-wrap">
+          <span class="msg-sender">Jordan Smith</span>
+          <div class="bubble">Thanks for the reminder! I'll make sure my room is clean</div>
+          <span class="msg-time">10:45 AM</span>
+        </div>
+      </div>
+      <div class="msg-row me">
+        <div class="avatar av-you msg-avatar">YU</div>
+        <div class="bubble-wrap">
+          <div class="bubble">Same here. Should we do a quick common area cleanup tonight?</div>
+          <span class="msg-time">11:02 AM</span>
+        </div>
+      </div>
+      <div class="msg-row">
+        <div class="avatar av-purple msg-avatar">ML</div>
+        <div class="bubble-wrap">
+          <span class="msg-sender">Morgan Lee</span>
+          <div class="bubble">Good idea! I can vacuum the living room after work</div>
+          <span class="msg-time">11:15 AM</span>
+        </div>
+      </div>
+      <div class="msg-row">
+        <div class="avatar av-orange msg-avatar">ST</div>
+        <div class="bubble-wrap">
+          <span class="msg-sender">Sam Taylor</span>
+          <div class="bubble">I'll handle the kitchen 🤙</div>
+          <span class="msg-time">11:20 AM</span>
+        </div>
+      </div>
+    </div>
+    <div class="chat-input-bar">
+      <input class="chat-input" id="chat-input" type="text" placeholder="Type a message...">
+      <button class="send-btn" onclick="sendMessage()">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════ MONEY ═══════════ -->
+  <div class="screen" id="money">
+    <div class="hero-header" style="position:relative">
+      <button class="money-add-btn" onclick="openExpenseModal()">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <p class="money-sub">Shared expenses &amp; payments</p>
+      <p style="font-size:13px;opacity:.7;margin-top:3px;">Total Balance</p>
+      <div class="money-balance" id="total-balance">$385.00</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Individual Balances</div>
+      <div class="balance-card" id="balance-list">
+        <div class="balance-row">
+          <div class="avatar av-you">Y</div>
+          <div class="bal-info">You</div>
+          <span class="bal-amount bal-up" id="bal-you">↗ $125</span>
+        </div>
+        <div class="balance-row">
+          <div class="avatar av-blue">A</div>
+          <div class="bal-info">Alex Chen</div>
+          <span class="bal-amount bal-up" id="bal-alex">↗ $450</span>
+        </div>
+        <div class="balance-row">
+          <div class="avatar av-teal">J</div>
+          <div class="bal-info">Jordan Smith</div>
+          <span class="bal-amount bal-down" id="bal-jordan">↘ $80</span>
+        </div>
+        <div class="balance-row">
+          <div class="avatar av-orange">S</div>
+          <div class="bal-info">Sam Taylor</div>
+          <span class="bal-amount bal-zero" id="bal-sam">↗ $0</span>
+        </div>
+        <div class="balance-row">
+          <div class="avatar av-purple">M</div>
+          <div class="bal-info">Morgan Lee</div>
+          <span class="bal-amount bal-down" id="bal-morgan">↘ $45</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" style="margin-bottom:0">
+      <div class="section-title">Recent Transactions</div>
+      <div class="txn-list" id="txn-list">
+        <div class="txn-item">
+          <div class="txn-icon">💵</div>
+          <div class="txn-body"><strong>Rent payment</strong><span>Alex Chen</span></div>
+          <div><span class="txn-amount bal-up">+$450</span><span class="txn-date">Feb 15</span></div>
+        </div>
+        <div class="txn-item">
+          <div class="txn-icon">💡</div>
+          <div class="txn-body"><strong>Utilities</strong><span>Alex Chen</span></div>
+          <div><span class="txn-amount bal-up">+$150</span><span class="txn-date">Feb 12</span></div>
+        </div>
+        <div class="txn-item">
+          <div class="txn-icon">🛒</div>
+          <div class="txn-body"><strong>Groceries</strong><span>Jordan Smith</span></div>
+          <div><span class="txn-amount bal-down">-$80</span><span class="txn-date">Feb 10</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="height:24px"></div>
+
+    <!-- Add Expense Modal -->
+    <div class="modal-overlay" id="expense-modal">
+      <div class="modal-sheet">
+        <div class="modal-title">Add Expense</div>
+        <div class="modal-field">
+          <label>Description</label>
+          <input type="text" id="exp-desc" placeholder="e.g. Groceries, Internet...">
+        </div>
+        <div class="modal-field">
+          <label>Amount ($)</label>
+          <input type="number" id="exp-amount" placeholder="0.00" min="0" step="0.01">
+        </div>
+        <div class="modal-field">
+          <label>Paid by</label>
+          <select id="exp-payer">
+            <option value="You">You</option>
+            <option value="Alex Chen">Alex Chen</option>
+            <option value="Jordan Smith">Jordan Smith</option>
+            <option value="Sam Taylor">Sam Taylor</option>
+            <option value="Morgan Lee">Morgan Lee</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="closeExpenseModal()">Cancel</button>
+          <button class="btn-primary" onclick="addExpense()">Add Expense</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ TASKS ═══════════ -->
+  <div class="screen" id="tasks">
+    <div class="hero-header" style="position:relative">
+      <button class="tasks-add-btn" onclick="openTaskModal()">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <h1>Tasks &amp; Chores ✅</h1>
+      <p id="tasks-subtitle">4 tasks pending</p>
+      <div class="tasks-stats">
+        <div class="tasks-stat"><div class="ts-val" id="stat-active">4</div><div class="ts-lbl">Active</div></div>
+        <div class="tasks-stat"><div class="ts-val" id="stat-done">2</div><div class="ts-lbl">Done</div></div>
+        <div class="tasks-stat"><div class="ts-val" id="stat-total">6</div><div class="ts-lbl">Total</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Active Tasks</div>
+      <div class="task-list" id="active-task-list"></div>
+    </div>
+
+    <div class="section completed-section">
+      <div class="section-title">Completed</div>
+      <div class="task-list" id="done-task-list"></div>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div class="modal-overlay" id="task-modal">
+      <div class="modal-sheet">
+        <div class="modal-title">Add New Task</div>
+        <div class="modal-field">
+          <label>Task Name</label>
+          <input type="text" id="task-name" placeholder="e.g. Clean bathroom...">
+        </div>
+        <div class="modal-field">
+          <label>Assigned to</label>
+          <select id="task-assignee">
+            <option value="You">You</option>
+            <option value="Alex Chen">Alex Chen</option>
+            <option value="Jordan Smith">Jordan Smith</option>
+            <option value="Sam Taylor">Sam Taylor</option>
+            <option value="Morgan Lee">Morgan Lee</option>
+          </select>
+        </div>
+        <div class="modal-field">
+          <label>Category</label>
+          <select id="task-category">
+            <option value="Cleaning">Cleaning</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Maintenance">Maintenance</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="modal-field">
+          <label>Due Date</label>
+          <input type="date" id="task-due">
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="closeTaskModal()">Cancel</button>
+          <button class="tasks-btn-primary" onclick="addTask()">Add Task</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BOTTOM NAV ── -->
+  <nav class="nav">
+    <button class="nav-item active" data-tab="home" onclick="switchTab('home')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 21V12h6v9"/></svg>
+      Home
+    </button>
+    <button class="nav-item" data-tab="chat" onclick="switchTab('chat')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+      Chat
+    </button>
+    <button class="nav-item" data-tab="money" onclick="switchTab('money')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      Money
+    </button>
+    <button class="nav-item" data-tab="tasks" onclick="switchTab('tasks')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+      Tasks
+    </button>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+// ── STATE ──
+const state = {
+  tasks: [
+    { id:1, name:'Take out trash', assignee:'You', category:'Cleaning', due:'Today', done:false },
+    { id:2, name:'Clean bathroom', assignee:'Morgan Lee', category:'Cleaning', due:'Tomorrow', done:false },
+    { id:3, name:'Vacuum living room', assignee:'Alex Chen', category:'Cleaning', due:'Feb 20', done:false },
+    { id:4, name:'Buy groceries', assignee:'Jordan Smith', category:'Shopping', due:'Feb 18', done:false },
+    { id:5, name:'Mop kitchen floor', assignee:'Sam Taylor', category:'Cleaning', due:'Feb 22', done:true },
+    { id:6, name:'Take out recycling', assignee:'You', category:'Cleaning', due:'Feb 17', done:true },
+  ],
+  nextTaskId: 7,
+  transactions: [
+    { desc:'Rent payment', payer:'Alex Chen', amount:450, date:'Feb 15', icon:'💵' },
+    { desc:'Utilities', payer:'Alex Chen', amount:150, date:'Feb 12', icon:'💡' },
+    { desc:'Groceries', payer:'Jordan Smith', amount:-80, date:'Feb 10', icon:'🛒' },
+  ],
+  balances: { you:125, alex:450, jordan:-80, sam:0, morgan:-45 },
+};
+
+// ── NAVIGATION ──
+function switchTab(tab) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(tab).classList.add('active');
+  document.querySelector(`.nav-item[data-tab="${tab}"]`).classList.add('active');
+  // Update accent color
+  const accents = { home:'#3B4FE8', chat:'#3B4FE8', money:'#1E8A4A', tasks:'#6C22C8' };
+  document.documentElement.style.setProperty('--accent', accents[tab]);
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── CHAT ──
+function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  const msgs = document.getElementById('chat-messages');
+  const now = new Date();
+  const time = now.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+  const row = document.createElement('div');
+  row.className = 'msg-row me';
+  row.innerHTML = `
+    <div class="avatar av-you msg-avatar">YU</div>
+    <div class="bubble-wrap">
+      <div class="bubble">${escHtml(text)}</div>
+      <span class="msg-time">${time}</span>
+    </div>`;
+  msgs.appendChild(row);
+  input.value = '';
+  msgs.scrollTop = msgs.scrollHeight;
+  addActivity('💬', `<strong>You</strong> sent a message`, 'Just now', 'ai-chat');
+}
+document.getElementById('chat-input').addEventListener('keydown', e => { if(e.key==='Enter') sendMessage(); });
+
+// ── TASKS ──
+function renderTasks() {
+  const active = state.tasks.filter(t => !t.done);
+  const done   = state.tasks.filter(t =>  t.done);
+  document.getElementById('stat-active').textContent = active.length;
+  document.getElementById('stat-done').textContent   = done.length;
+  document.getElementById('stat-total').textContent  = state.tasks.length;
+  document.getElementById('tasks-subtitle').textContent = `${active.length} task${active.length!==1?'s':''} pending`;
+  document.getElementById('home-tasks').textContent = active.length;
+
+  const activeEl = document.getElementById('active-task-list');
+  const doneEl   = document.getElementById('done-task-list');
+  activeEl.innerHTML = active.length ? active.map(taskHTML).join('') : '<div style="padding:16px;text-align:center;color:var(--muted);font-size:14px">No active tasks 🎉</div>';
+  doneEl.innerHTML   = done.length   ? done.map(taskHTML).join('')   : '<div style="padding:16px;text-align:center;color:var(--muted);font-size:14px">No completed tasks yet</div>';
+}
+
+function taskHTML(t) {
+  const cat = t.category === 'Shopping' ? 'shopping' : '';
+  return `<div class="task-item" onclick="toggleTask(${t.id})">
+    <div class="task-checkbox ${t.done?'done':''}">
+      ${t.done ? '<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>' : ''}
+    </div>
+    <div class="task-item-body">
+      <strong class="${t.done?'strikethrough':''}">${escHtml(t.name)}</strong>
+      <span>${escHtml(t.assignee)}</span>
+    </div>
+    <span class="task-badge ${cat}">${escHtml(t.category)}</span>
+    <div class="task-due-date">
+      <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      ${escHtml(t.due)}
+    </div>
+  </div>`;
+}
+
+function toggleTask(id) {
+  const t = state.tasks.find(x => x.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  renderTasks();
+  if (t.done) {
+    showToast(`✅ "${t.name}" completed!`);
+    addActivity('✓', `<strong>You</strong> completed ${escHtml(t.name)}`, 'Just now', 'ai-task');
+  }
+}
+
+function openTaskModal() {
+  // Set default date to today
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('task-due').value = today;
+  document.getElementById('task-modal').classList.add('open');
+}
+function closeTaskModal() { document.getElementById('task-modal').classList.remove('open'); }
+
+function addTask() {
+  const name     = document.getElementById('task-name').value.trim();
+  const assignee = document.getElementById('task-assignee').value;
+  const category = document.getElementById('task-category').value;
+  const dueRaw   = document.getElementById('task-due').value;
+  if (!name) { showToast('Please enter a task name'); return; }
+  const due = dueRaw ? new Date(dueRaw).toLocaleDateString('en-US', {month:'short', day:'numeric'}) : 'TBD';
+  state.tasks.unshift({ id: state.nextTaskId++, name, assignee, category, due, done:false });
+  renderTasks();
+  closeTaskModal();
+  document.getElementById('task-name').value = '';
+  showToast('Task added!');
+  addActivity('✓', `<strong>You</strong> added task: ${escHtml(name)}`, 'Just now', 'ai-task');
+}
+
+// ── MONEY ──
+function openExpenseModal()  { document.getElementById('expense-modal').classList.add('open'); }
+function closeExpenseModal() { document.getElementById('expense-modal').classList.remove('open'); }
+
+function addExpense() {
+  const desc   = document.getElementById('exp-desc').value.trim();
+  const amount = parseFloat(document.getElementById('exp-amount').value);
+  const payer  = document.getElementById('exp-payer').value;
+  if (!desc || isNaN(amount) || amount <= 0) { showToast('Please fill in all fields'); return; }
+
+  // Add to txn list
+  const txnList = document.getElementById('txn-list');
+  const icons = { Utilities:'💡', Groceries:'🛒', Rent:'🏠' };
+  const icon = icons[desc] || '💵';
+  const today = new Date().toLocaleDateString('en-US', {month:'short', day:'numeric'});
+  const item = document.createElement('div');
+  item.className = 'txn-item';
+  item.innerHTML = `
+    <div class="txn-icon">${icon}</div>
+    <div class="txn-body"><strong>${escHtml(desc)}</strong><span>${escHtml(payer)}</span></div>
+    <div><span class="txn-amount bal-up">+$${amount.toFixed(2)}</span><span class="txn-date">${today}</span></div>`;
+  txnList.prepend(item);
+
+  // Update balances
+  const key = payer === 'You' ? 'you' : payer.split(' ')[0].toLowerCase();
+  if (state.balances[key] !== undefined) { state.balances[key] += amount; }
+  renderBalances();
+
+  closeExpenseModal();
+  document.getElementById('exp-desc').value = '';
+  document.getElementById('exp-amount').value = '';
+  showToast('Expense added!');
+  addActivity('💵', `<strong>${escHtml(payer)}</strong> paid $${amount.toFixed(2)} for ${escHtml(desc)}`, 'Just now', 'ai-money');
+}
+
+function renderBalances() {
+  const b = state.balances;
+  const total = Object.values(b).reduce((a,v) => a+v, 0);
+  document.getElementById('total-balance').textContent = `$${Math.abs(total).toFixed(2)}`;
+  document.getElementById('home-balance').textContent  = `$${Math.abs(total).toFixed(0)}`;
+  setBalEl('bal-you', b.you);
+  setBalEl('bal-alex', b.alex);
+  setBalEl('bal-jordan', b.jordan);
+  setBalEl('bal-sam', b.sam);
+  setBalEl('bal-morgan', b.morgan);
+}
+
+function setBalEl(id, val) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'bal-amount ' + (val > 0 ? 'bal-up' : val < 0 ? 'bal-down' : 'bal-zero');
+  el.textContent = (val > 0 ? '↗' : val < 0 ? '↘' : '↗') + ' $' + Math.abs(val);
+}
+
+// ── ACTIVITY ──
+function addActivity(icon, html, time, cls) {
+  const feed = document.getElementById('activity-feed');
+  const item = document.createElement('div');
+  item.className = 'activity-item';
+  item.innerHTML = `<div class="activity-icon ${cls}">${icon}</div><div class="activity-body"><p>${html}</p><small>${time}</small></div>`;
+  feed.prepend(item);
+  // Keep max 8
+  while (feed.children.length > 8) feed.removeChild(feed.lastChild);
+}
+
+// ── UTILS ──
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Close modals on overlay click
+document.getElementById('expense-modal').addEventListener('click', e => { if(e.target===e.currentTarget) closeExpenseModal(); });
+document.getElementById('task-modal').addEventListener('click', e => { if(e.target===e.currentTarget) closeTaskModal(); });
+
+// ── INIT ──
+renderTasks();
+renderBalances();
+</script>
+</body>
+</html>
